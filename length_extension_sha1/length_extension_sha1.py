@@ -5,6 +5,10 @@ import struct
 # https://github.com/ajalt/python-sha1
 import sha1
 
+KEY = b"KEYVALUE"
+ORIGIN_STRING = b"This Is An Original Data"
+INJECT_STRING = b"I'm Attacker"
+
 class Sha1Padding:
     def __init__(self):
         # Length in bytes of all data that has been processed so far
@@ -29,41 +33,38 @@ class Sha1Padding:
         return message
 
 def client():
-    key = b"KEYVALUE"
-    originData = b"This Is An Original Data"
-
     h = hashlib.new('sha1')
-    h.update(key)
-    h.update(originData)
+    h.update(KEY)
+    h.update(ORIGIN_STRING)
     
-    return originData, h.hexdigest()
+    return ORIGIN_STRING, h.hexdigest()
 
 def server(data, hashValue):
-    key = b"KEYVALUE"
-
     h = hashlib.new('sha1')
-    h.update(key + data)
+    h.update(KEY + data)
 
     if (hashValue == h.hexdigest()):
-        print("Same value")
+        print("-- Server --")
+        print("Server - I've received data:", data)
+        print("Server - I've recevied hash:", hashValue)
+        print("Server - Also I've calculateed the hash with secret key:", h.hexdigest())
         return True
     else:
         return False
 
 def attack(originData, originHash, keyLen):
-    injectedData = b"I'm Attacker"
 
     """ Generate attackData """
     # Padding - (key + originData + padding) + attackData
     pad = Sha1Padding()
 
     tmpStr = ('A' * keyLen).encode()
-    attackData = pad.pad(tmpStr + originData)[keyLen:] + injectedData
+    attackData = pad.pad(tmpStr + originData)[keyLen:] + INJECT_STRING
     #print(hexdump.hexdump(attackData))
 
     """ Generate attackHash """
     sha = sha1.Sha1Hash()
-    sha.update(injectedData, originHash.encode())
+    sha.update(INJECT_STRING, originHash.encode())
     attackHash = sha.hexdigest()
 
     return attackData, attackHash
@@ -77,10 +78,7 @@ def main():
     for keyLen in range(0, 32):
         attackData, attackHash = attack(originData, originHash, keyLen)
         if(server(attackData, attackHash) is True):
-            print("Success")
             print("keyLen:", keyLen)
-            print("originData:", originData, "originHash:", originHash)
-            print("attackData:", attackData, "attackHash:", attackHash)
             break
 
 if __name__ == "__main__":
