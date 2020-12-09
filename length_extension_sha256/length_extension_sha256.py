@@ -6,6 +6,8 @@ import struct
 import sha256
 
 KEY = b"KEYVALUE"
+
+EXPECTED_KEY_LEN = 32
 ORIGIN_STRING = b"This Is An Original Data"
 INJECT_STRING = "I'm Attacker"
 
@@ -75,7 +77,7 @@ def main():
     server(originData, originHash)
 
     print("-----Attacker-----")
-    for keyLen in range(0, 32):
+    for keyLen in range(0, EXPECTED_KEY_LEN):
         attackData, attackHash = attack(originData, originHash, keyLen)
         if(server(attackData, attackHash) is True):
             print("keyLen:", keyLen)
